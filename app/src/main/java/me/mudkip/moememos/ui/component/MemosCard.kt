@@ -1,5 +1,7 @@
 package me.mudkip.moememos.ui.component
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.text.format.DateUtils
 import androidx.compose.foundation.BorderStroke
@@ -14,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Link
@@ -152,6 +155,7 @@ fun MemosCardActionButton(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val clipboardManager = context.getSystemService(ClipboardManager::class.java)
     val memosViewModel = LocalMemos.current
     val userStateViewModel = LocalUserState.current
     val currentAccount by userStateViewModel.currentAccount.collectAsState()
@@ -222,6 +226,20 @@ fun MemosCardActionButton(
                 leadingIcon = {
                     Icon(
                         Icons.Outlined.Share,
+                        contentDescription = null
+                    )
+                })
+            DropdownMenuItem(
+                text = { Text(R.string.copy.string) },
+                onClick = {
+                    clipboardManager?.setPrimaryClip(
+                        ClipData.newPlainText(context.getString(R.string.memo), memo.content)
+                    )
+                    menuExpanded = false
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.ContentCopy,
                         contentDescription = null
                     )
                 })

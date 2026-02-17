@@ -69,6 +69,7 @@
     <string name="still_sync">Synchroniser quand même</string>
     <string name="pin">Épingler</string>
     <string name="share">Partager</string>
+    <string name="copy">Copier</string>
     <string name="open">Ouvrir</string>
     <string name="archive">Archiver</string>
     <string name="memo_visibility_public">Public</string>

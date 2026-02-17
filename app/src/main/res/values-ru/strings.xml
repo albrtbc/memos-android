@@ -68,6 +68,7 @@
     <string name="still_sync">Все равно синхронизировать</string>
     <string name="pin">Закрепить</string>
     <string name="share">Поделиться</string>
+    <string name="copy">Копировать</string>
     <string name="copy_link">Скопировать ссылку</string>
     <string name="open">Открыть</string>
     <string name="archive">Архивировать</string>

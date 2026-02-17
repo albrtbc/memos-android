@@ -64,6 +64,7 @@
     <string name="still_sync">仍然同步</string>
     <string name="pin">置顶</string>
     <string name="share">分享</string>
+    <string name="copy">复制</string>
     <string name="copy_link">复制链接</string>
     <string name="open">打开</string>
     <string name="archive">归档</string>
