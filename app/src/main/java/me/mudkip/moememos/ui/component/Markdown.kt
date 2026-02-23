@@ -29,6 +29,7 @@ import androidx.core.net.toUri
 import com.mikepenz.markdown.coil3.Coil3ImageTransformerImpl
 import com.mikepenz.markdown.compose.components.markdownComponents
 import com.mikepenz.markdown.compose.elements.MarkdownCheckBox
+import com.mikepenz.markdown.compose.elements.MarkdownParagraph
 import com.mikepenz.markdown.compose.elements.highlightedCodeBlock
 import com.mikepenz.markdown.compose.elements.highlightedCodeFence
 import com.mikepenz.markdown.m3.markdownTypography
@@ -38,7 +39,11 @@ import com.mikepenz.markdown.model.markdownAnnotator
 import com.mikepenz.markdown.model.markdownAnnotatorConfig
 import com.mikepenz.markdown.model.rememberMarkdownState
 import com.mikepenz.markdown.utils.getUnescapedTextInNode
+import org.intellij.markdown.MarkdownElementTypes
 import org.intellij.markdown.MarkdownTokenTypes
+import org.intellij.markdown.flavours.gfm.GFMTokenTypes
+import me.mudkip.moememos.util.EmbedInfo
+import me.mudkip.moememos.util.detectEmbed
 import me.mudkip.moememos.util.findCustomTagMatches
 import me.mudkip.moememos.util.getCustomTagName
 import me.mudkip.moememos.util.isCustomTagSupportedNode
@@ -161,6 +166,22 @@ fun Markdown(
             components = markdownComponents(
                 codeFence = highlightedCodeFence,
                 codeBlock = highlightedCodeBlock,
+                paragraph = { model ->
+                    val embed = detectParagraphEmbed(model.content, model.node)
+                    if (embed != null) {
+                        when (embed) {
+                            is EmbedInfo.YouTube -> YouTubeEmbedCard(embed.videoId, embed.url)
+                            is EmbedInfo.Twitter -> TwitterEmbedCard(embed.tweetId, embed.url)
+                            is EmbedInfo.Reddit -> RedditEmbedCard(embed.url)
+                        }
+                    } else {
+                        MarkdownParagraph(
+                            content = model.content,
+                            node = model.node,
+                            style = model.typography.paragraph,
+                        )
+                    }
+                },
                 checkbox = {
                     val node = it.node
                     MarkdownCheckBox(
@@ -196,6 +217,36 @@ fun Markdown(
     } else {
         markdownContent()
     }
+}
+
+/**
+ * Checks if a paragraph node contains only a single bare link (link text == URL)
+ * that matches a supported embed platform (YouTube, Twitter/X, Reddit).
+ */
+private fun detectParagraphEmbed(content: String, paragraphNode: org.intellij.markdown.ast.ASTNode): EmbedInfo? {
+    val significantChildren = paragraphNode.children.filter {
+        it.type != MarkdownTokenTypes.EOL && it.type != MarkdownTokenTypes.WHITE_SPACE
+    }
+    if (significantChildren.size != 1) return null
+    val child = significantChildren[0]
+
+    val url: String
+    if (child.type == GFMTokenTypes.GFM_AUTOLINK || child.type == MarkdownElementTypes.AUTOLINK) {
+        url = content.substring(child.startOffset, child.endOffset).trim('<', '>')
+    } else if (child.type == MarkdownElementTypes.INLINE_LINK) {
+        val linkDest = child.children.firstOrNull { it.type == MarkdownElementTypes.LINK_DESTINATION }
+            ?: return null
+        url = content.substring(linkDest.startOffset, linkDest.endOffset)
+        val linkText = child.children.firstOrNull { it.type == MarkdownElementTypes.LINK_TEXT }
+            ?: return null
+        val text = content.substring(linkText.startOffset, linkText.endOffset)
+            .removePrefix("[").removeSuffix("]")
+        if (text != url) return null
+    } else {
+        return null
+    }
+
+    return detectEmbed(url)
 }
 
 private fun resolveMarkdownImageLink(link: String, imageBaseUrl: String?): String {
