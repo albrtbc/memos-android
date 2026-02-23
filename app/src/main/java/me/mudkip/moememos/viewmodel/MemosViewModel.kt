@@ -118,6 +118,7 @@ class MemosViewModel @Inject constructor(
             val syncResult = memoService.sync(false)
             if (syncResult is ApiResponse.Success) {
                 WidgetUpdater.updateWidgets(appContext)
+                loadTags()
             } else {
                 if (!syncResult.isAccessTokenInvalidFailure()) {
                     errorMessage = syncResult.getErrorMessage()
@@ -151,6 +152,7 @@ class MemosViewModel @Inject constructor(
                 accountService.rememberAcceptedUnsupportedSyncVersion(allowHigherV1Version)
             }
             WidgetUpdater.updateWidgets(appContext)
+            loadTags()
         } else {
             val message = syncResult.getErrorMessage()
             errorMessage = message
