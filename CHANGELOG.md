@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.3.0](https://github.com/albrtbc/MoeMemosAndroid/compare/v2.2.0...v2.3.0) (2026-02-24)
+
+
+### Features
+
+* persist and control map zoom level for locations ([c839736](https://github.com/albrtbc/MoeMemosAndroid/commit/c839736a0d4399da3bc5a350edb2303d96f33b1f))
+
+
+### Bug Fixes
+
+* display location after memo content in card list ([90f3776](https://github.com/albrtbc/MoeMemosAndroid/commit/90f3776384726195a8dab06b374902ea1c764d33))
+* style hashtags with rounded background chips ([337fefc](https://github.com/albrtbc/MoeMemosAndroid/commit/337fefc57cb04c092f5dd01ab5002e4fcdbeb1e1))
+* switch map tiles to CartoDB to resolve OSM access blocks ([aee61a4](https://github.com/albrtbc/MoeMemosAndroid/commit/aee61a4c0c008b0f011ca813f89721f139f711e0))
+* use OSM tiles with User-Agent and improve tile rendering precision ([beb5f93](https://github.com/albrtbc/MoeMemosAndroid/commit/beb5f9361bc68540d6de603f27714d80ad040099))
+
 ## [2.2.0](https://github.com/albrtbc/MoeMemosAndroid/compare/v2.1.1...v2.2.0) (2026-02-24)
 
 
