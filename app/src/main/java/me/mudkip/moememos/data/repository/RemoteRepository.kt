@@ -14,6 +14,13 @@ abstract class RemoteRepository {
     abstract suspend fun listArchivedMemos(): ApiResponse<List<Memo>>
     abstract suspend fun listWorkspaceMemos(pageSize: Int, pageToken: String?): ApiResponse<Pair<List<Memo>, String?>>
 
+    abstract suspend fun listMemosPaged(
+        pageSize: Int,
+        pageToken: String?,
+        filter: String? = null,
+        orderBy: String? = null
+    ): ApiResponse<Pair<List<Memo>, String?>>
+
     abstract suspend fun createMemo(
         content: String,
         visibility: MemoVisibility,

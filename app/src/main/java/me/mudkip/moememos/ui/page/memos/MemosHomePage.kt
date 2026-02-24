@@ -59,7 +59,9 @@ fun MemosHomePage(
 
     suspend fun requestManualSync(allowHigherV1Version: String? = null) {
         when (val result = memosViewModel.refreshMemos(allowHigherV1Version)) {
-            ManualSyncResult.Completed -> Unit
+            ManualSyncResult.Completed -> {
+                memosViewModel.triggerPagingRefresh()
+            }
             is ManualSyncResult.Blocked -> {
                 syncAlert = HomeSyncAlert.Blocked(result.message)
             }

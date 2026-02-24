@@ -28,6 +28,7 @@ interface MemosV1Api {
         @Query("pageToken") pageToken: String? = null,
         @Query("state") state: MemosV1State? = null,
         @Query("filter") filter: String? = null,
+        @Query("order_by") orderBy: String? = null,
     ): ApiResponse<ListMemosResponse>
 
     @POST("api/v1/memos")

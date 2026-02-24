@@ -1,5 +1,6 @@
 package me.mudkip.moememos.data.local.dao
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -43,6 +44,35 @@ interface MemoDao {
 
     @Query("SELECT * FROM memos WHERE remoteId = :remoteId AND accountKey = :accountKey")
     suspend fun getMemoByRemoteId(remoteId: String, accountKey: String): MemoEntity?
+
+    @Transaction
+    @Query("""
+        SELECT * FROM memos
+        WHERE accountKey = :accountKey AND archived = 0 AND isDeleted = 0
+        ORDER BY pinned DESC, date DESC
+    """)
+    fun getPagedMemos(accountKey: String): PagingSource<Int, MemoWithResources>
+
+    @Transaction
+    @Query("""
+        SELECT * FROM memos
+        WHERE accountKey = :accountKey AND archived = 0 AND isDeleted = 0
+            AND content LIKE '%' || :searchTerm || '%'
+        ORDER BY pinned DESC, date DESC
+    """)
+    fun getPagedMemosBySearch(accountKey: String, searchTerm: String): PagingSource<Int, MemoWithResources>
+
+    @Transaction
+    @Query("""
+        SELECT * FROM memos
+        WHERE accountKey = :accountKey AND archived = 0 AND isDeleted = 0
+            AND (content LIKE '%#' || :tag || ' %'
+                OR content LIKE '%#' || :tag || :newline || '%'
+                OR content LIKE '%#' || :tag
+                OR content LIKE '%#' || :tag || '/%')
+        ORDER BY pinned DESC, date DESC
+    """)
+    fun getPagedMemosByTag(accountKey: String, tag: String, newline: String = "\n"): PagingSource<Int, MemoWithResources>
 
     @Upsert
     suspend fun insertMemo(memo: MemoEntity)

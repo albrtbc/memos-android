@@ -10,14 +10,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
+import androidx.paging.map
 import com.skydoves.sandwich.ApiResponse
 import com.skydoves.sandwich.suspendOnSuccess
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -26,8 +39,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.mudkip.moememos.R
 import me.mudkip.moememos.data.constant.MoeMemosException
+import me.mudkip.moememos.data.datasource.MEMOS_PAGE_SIZE
+import me.mudkip.moememos.data.datasource.MemosPagingSource
+import me.mudkip.moememos.data.local.dao.MemoDao
 import me.mudkip.moememos.data.local.entity.MemoEntity
+import me.mudkip.moememos.data.local.entity.MemoWithResources
 import me.mudkip.moememos.data.local.entity.ResourceEntity
+import me.mudkip.moememos.data.model.Account
 import me.mudkip.moememos.data.model.DailyUsageStat
 import me.mudkip.moememos.data.model.MemoVisibility
 import me.mudkip.moememos.data.model.SyncStatus
@@ -41,9 +59,11 @@ import java.time.OffsetDateTime
 import javax.inject.Inject
 
 @HiltViewModel
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 class MemosViewModel @Inject constructor(
     private val memoService: MemoService,
     private val accountService: AccountService,
+    private val memoDao: MemoDao,
     @param:ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
@@ -64,6 +84,93 @@ class MemosViewModel @Inject constructor(
 
     val syncStatus: StateFlow<SyncStatus> =
         memoService.syncStatus.stateIn(viewModelScope, SharingStarted.Eagerly, SyncStatus())
+
+    // --- Paging state ---
+    private val _currentFilter = MutableStateFlow<MemoFilter>(MemoFilter.None)
+    private val _useLocalFallback = MutableStateFlow(false)
+    private val _refreshSignal = MutableStateFlow(0L)
+
+    private val debouncedFilter: Flow<MemoFilter> = _currentFilter
+        .debounce { filter ->
+            if (filter is MemoFilter.Search) 300L else 0L
+        }
+        .distinctUntilChanged()
+
+    val pagedMemos: Flow<PagingData<MemoEntity>> = combine(
+        accountService.currentAccount,
+        debouncedFilter,
+        _useLocalFallback,
+        _refreshSignal
+    ) { account, filter, useLocal, _ ->
+        Triple(account, filter, useLocal)
+    }.flatMapLatest { (account, filter, useLocal) ->
+        if (account == null) {
+            return@flatMapLatest flowOf(PagingData.empty<MemoEntity>())
+        }
+
+        val accountKey = account.accountKey()
+        val isV1Remote = account is Account.MemosV1
+
+        // Use API paging for search/tag on V1 accounts; Room paging otherwise.
+        // Room paging handles pinned-first ordering correctly.
+        val useApiPaging = isV1Remote && !useLocal && filter !is MemoFilter.None
+
+        if (useApiPaging) {
+            val apiFilter = buildApiFilter(filter)
+            val remoteRepo = accountService.getRemoteRepository()
+                ?: return@flatMapLatest flowOf(PagingData.empty<MemoEntity>())
+            Pager(PagingConfig(pageSize = MEMOS_PAGE_SIZE)) {
+                MemosPagingSource(
+                    remoteRepository = remoteRepo,
+                    memoDao = memoDao,
+                    accountKey = accountKey,
+                    filter = apiFilter,
+                    orderBy = "display_time desc"
+                )
+            }.flow
+        } else {
+            Pager(PagingConfig(pageSize = MEMOS_PAGE_SIZE)) {
+                when (filter) {
+                    is MemoFilter.None -> memoDao.getPagedMemos(accountKey)
+                    is MemoFilter.Tag -> memoDao.getPagedMemosByTag(accountKey, filter.tag)
+                    is MemoFilter.Search -> memoDao.getPagedMemosBySearch(accountKey, filter.query)
+                }
+            }.flow.map { pagingData ->
+                pagingData.map { memoWithResources ->
+                    memoWithResources.memo.copy().also { it.resources = memoWithResources.resources }
+                }
+            }
+        }
+    }.cachedIn(viewModelScope)
+
+    fun setFilter(filter: MemoFilter) {
+        _useLocalFallback.value = false
+        _currentFilter.value = filter
+    }
+
+    fun enableOfflineFallback() {
+        _useLocalFallback.value = true
+    }
+
+    fun triggerPagingRefresh() {
+        _refreshSignal.value = System.currentTimeMillis()
+    }
+
+    private fun buildApiFilter(filter: MemoFilter): String? {
+        return when (filter) {
+            is MemoFilter.None -> null
+            is MemoFilter.Tag -> {
+                val escaped = filter.tag.replace("\\", "\\\\").replace("\"", "\\\"")
+                "tag in [\"$escaped\"]"
+            }
+            is MemoFilter.Search -> {
+                val escaped = filter.query.replace("\\", "\\\\").replace("\"", "\\\"")
+                "content.contains(\"$escaped\")"
+            }
+        }
+    }
+
+    // --- Existing logic (unchanged, used for heatmap/stats/widgets) ---
 
     init {
         snapshotFlow { memos.toList() }
@@ -175,32 +282,32 @@ class MemosViewModel @Inject constructor(
     suspend fun updateMemoPinned(memoIdentifier: String, pinned: Boolean) = withContext(viewModelScope.coroutineContext) {
         memoService.getRepository().updateMemo(memoIdentifier, pinned = pinned).suspendOnSuccess {
             updateMemo(data)
-            // Update widgets after pinning/unpinning a memo
             WidgetUpdater.updateWidgets(appContext)
+            triggerPagingRefresh()
         }
     }
 
     suspend fun editMemo(memoIdentifier: String, content: String, resourceList: List<ResourceEntity>?, visibility: MemoVisibility): ApiResponse<MemoEntity> = withContext(viewModelScope.coroutineContext) {
         memoService.getRepository().updateMemo(memoIdentifier, content, resourceList, visibility).suspendOnSuccess {
             updateMemo(data)
-            // Update widgets after editing a memo
             WidgetUpdater.updateWidgets(appContext)
+            triggerPagingRefresh()
         }
     }
 
     suspend fun archiveMemo(memoIdentifier: String) = withContext(viewModelScope.coroutineContext) {
         memoService.getRepository().archiveMemo(memoIdentifier).suspendOnSuccess {
             memos.removeIf { it.identifier == memoIdentifier }
-            // Update widgets after archiving a memo
             WidgetUpdater.updateWidgets(appContext)
+            triggerPagingRefresh()
         }
     }
 
     suspend fun deleteMemo(memoIdentifier: String) = withContext(viewModelScope.coroutineContext) {
         memoService.getRepository().deleteMemo(memoIdentifier).suspendOnSuccess {
             memos.removeIf { it.identifier == memoIdentifier }
-            // Update widgets after deleting a memo
             WidgetUpdater.updateWidgets(appContext)
+            triggerPagingRefresh()
         }
     }
 

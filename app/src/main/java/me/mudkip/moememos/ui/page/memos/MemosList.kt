@@ -1,14 +1,16 @@
 package me.mudkip.moememos.ui.page.memos
 
 import android.net.Uri
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -21,10 +23,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.coroutines.launch
 import me.mudkip.moememos.R
 import me.mudkip.moememos.data.model.Account
@@ -38,6 +43,7 @@ import me.mudkip.moememos.ui.page.common.RouteName
 import me.mudkip.moememos.viewmodel.LocalMemos
 import me.mudkip.moememos.viewmodel.LocalUserState
 import me.mudkip.moememos.viewmodel.ManualSyncResult
+import me.mudkip.moememos.viewmodel.MemoFilter
 import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,33 +70,25 @@ fun MemosList(
     val scope = rememberCoroutineScope()
     var isRefreshing by remember { mutableStateOf(false) }
     var syncAlert by remember { mutableStateOf<PullRefreshSyncAlert?>(null) }
-    val filteredMemos = remember(viewModel.memos.toList(), tag, searchString) {
-        val pinned = viewModel.memos.filter { it.pinned }
-        val nonPinned = viewModel.memos.filter { !it.pinned }
-        var fullList = pinned + nonPinned
 
-        tag?.let { tag ->
-            fullList = fullList.filter { memo ->
-                memo.content.contains("#$tag") ||
-                        memo.content.contains("#$tag/")
-            }
+    val pagedMemos = viewModel.pagedMemos.collectAsLazyPagingItems()
+
+    // Set filter based on tag/searchString parameters
+    LaunchedEffect(tag, searchString) {
+        val filter = when {
+            tag != null -> MemoFilter.Tag(tag)
+            !searchString.isNullOrEmpty() -> MemoFilter.Search(searchString)
+            else -> MemoFilter.None
         }
-
-        searchString?.let { searchString ->
-            if (searchString.isNotEmpty()) {
-                fullList = fullList.filter { memo ->
-                    memo.content.contains(searchString, true) ||
-                    memo.resources.any { resource ->
-                        resource.filename.contains(searchString, true)
-                    }
-                }
-            }
-        }
-
-        fullList
+        viewModel.setFilter(filter)
     }
-    var listTopId: String? by rememberSaveable {
-        mutableStateOf(null)
+
+    // Handle offline fallback on refresh error
+    LaunchedEffect(pagedMemos.loadState.refresh) {
+        val refreshLoadState = pagedMemos.loadState.refresh
+        if (refreshLoadState is LoadState.Error) {
+            viewModel.enableOfflineFallback()
+        }
     }
 
     PullToRefreshBox(
@@ -114,6 +112,8 @@ fun MemosList(
                         }
                     }
                 }
+                viewModel.triggerPagingRefresh()
+                pagedMemos.refresh()
                 isRefreshing = false
             }
         },
@@ -124,7 +124,8 @@ fun MemosList(
             modifier = Modifier.fillMaxSize(),
             state = lazyListState
         ) {
-            items(filteredMemos, key = { it.identifier }) { memo ->
+            items(pagedMemos.itemCount) { index ->
+                val memo = pagedMemos[index] ?: return@items
                 MemosCard(
                     memo = memo,
                     onClick = { selectedMemo ->
@@ -138,6 +139,20 @@ fun MemosList(
                     onTagClick = onTagClick
                 )
             }
+
+            // Loading indicator for appending more pages
+            if (pagedMemos.loadState.append is LoadState.Loading) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+            }
         }
     }
 
@@ -149,14 +164,6 @@ fun MemosList(
 
     LaunchedEffect(Unit) {
         viewModel.loadMemos()
-    }
-
-    LaunchedEffect(filteredMemos.firstOrNull()?.identifier) {
-        if (listTopId != null && filteredMemos.isNotEmpty() && listTopId != filteredMemos.first().identifier) {
-            lazyListState.scrollToItem(0)
-        }
-
-        listTopId = filteredMemos.firstOrNull()?.identifier
     }
 
     when (val alert = syncAlert) {

@@ -100,6 +100,26 @@ class MemosV1Repository(
         return listMemosByFilter(MemosV1State.ARCHIVED, "creator_id == ${account.info.id}")
     }
 
+    override suspend fun listMemosPaged(
+        pageSize: Int,
+        pageToken: String?,
+        filter: String?,
+        orderBy: String?
+    ): ApiResponse<Pair<List<Memo>, String?>> {
+        val baseFilter = "creator_id == ${account.info.id}"
+        val composedFilter = if (filter != null) "$baseFilter && $filter" else baseFilter
+        val resp = memosApi.listMemos(
+            pageSize = pageSize,
+            pageToken = pageToken,
+            state = MemosV1State.NORMAL,
+            filter = composedFilter,
+            orderBy = orderBy
+        )
+        return resp.mapSuccess {
+            this.memos.map { convertMemo(it) } to this.nextPageToken?.ifEmpty { null }
+        }
+    }
+
     override suspend fun listWorkspaceMemos(
         pageSize: Int,
         pageToken: String?

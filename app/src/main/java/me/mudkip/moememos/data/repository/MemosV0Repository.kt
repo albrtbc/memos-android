@@ -166,6 +166,16 @@ class MemosV0Repository (
         return memosApi.deleteResource(remoteId.toLong())
     }
 
+    override suspend fun listMemosPaged(
+        pageSize: Int,
+        pageToken: String?,
+        filter: String?,
+        orderBy: String?
+    ): ApiResponse<Pair<List<Memo>, String?>> {
+        // V0 does not support CEL filters; fall back to listWorkspaceMemos
+        return listWorkspaceMemos(pageSize, pageToken)
+    }
+
     override suspend fun listWorkspaceMemos(
         pageSize: Int,
         pageToken: String?
