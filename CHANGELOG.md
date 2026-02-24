@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.4.1](https://github.com/albrtbc/memos-android/compare/v2.4.0...v2.4.1) (2026-02-24)
+
+
+### Bug Fixes
+
+* rename app from MoeMemos to GS Memos ([6d8e7d4](https://github.com/albrtbc/memos-android/commit/6d8e7d432e26f825d63ceb375dac58c6858388b7))
+* replace all Moe Memos references with GS Memos in all locales ([2537211](https://github.com/albrtbc/memos-android/commit/25372110da81f67d1a313e398ead8360d3c55584))
+* show server host as fallback when account name is empty in settings ([f3e8f35](https://github.com/albrtbc/memos-android/commit/f3e8f356aca6e0810967bbf32dd7b6eda1bdd366))
+* update settings links to GS Memos repo and add privacy policy ([5c8bdf5](https://github.com/albrtbc/memos-android/commit/5c8bdf59f83b15027189f30254b11859296c9f99))
+
 ## [2.4.0](https://github.com/albrtbc/memos-android/compare/v2.3.0...v2.4.0) (2026-02-24)
 
 
