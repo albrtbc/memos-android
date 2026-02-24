@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/albrtbc/MoeMemosAndroid/compare/v2.1.1...v2.2.0) (2026-02-24)
+
+
+### Features
+
+* add location support to memo editor ([64ddffd](https://github.com/albrtbc/MoeMemosAndroid/commit/64ddffd2993862cdbfb0074568ac6a8e86c8984b))
+
 ## [2.1.1](https://github.com/albrtbc/MoeMemosAndroid/compare/v2.1.0...v2.1.1) (2026-02-24)
 
 
