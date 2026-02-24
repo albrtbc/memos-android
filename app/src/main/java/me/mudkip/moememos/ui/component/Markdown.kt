@@ -22,9 +22,10 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.withLink
-import androidx.compose.ui.text.style.TextDecoration
+
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import com.mikepenz.markdown.coil3.Coil3ImageTransformerImpl
 import com.mikepenz.markdown.compose.components.markdownComponents
@@ -32,11 +33,14 @@ import com.mikepenz.markdown.compose.elements.MarkdownCheckBox
 import com.mikepenz.markdown.compose.elements.MarkdownParagraph
 import com.mikepenz.markdown.compose.elements.highlightedCodeBlock
 import com.mikepenz.markdown.compose.elements.highlightedCodeFence
+import com.mikepenz.markdown.compose.extendedspans.ExtendedSpans
+import com.mikepenz.markdown.compose.extendedspans.RoundedCornerSpanPainter
 import com.mikepenz.markdown.m3.markdownTypography
 import com.mikepenz.markdown.model.ImageData
 import com.mikepenz.markdown.model.ImageTransformer
 import com.mikepenz.markdown.model.markdownAnnotator
 import com.mikepenz.markdown.model.markdownAnnotatorConfig
+import com.mikepenz.markdown.model.markdownExtendedSpans
 import com.mikepenz.markdown.model.rememberMarkdownState
 import com.mikepenz.markdown.utils.getUnescapedTextInNode
 import org.intellij.markdown.MarkdownElementTypes
@@ -74,8 +78,8 @@ fun Markdown(
     val uriHandler = LocalUriHandler.current
     val tagLinkStyle = TextLinkStyles(
         style = SpanStyle(
-            color = MaterialTheme.colorScheme.primary,
-            textDecoration = TextDecoration.Underline,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            background = MaterialTheme.colorScheme.surfaceVariant,
         )
     )
     val tagLinkListener = remember(uriHandler, onTagClick) {
@@ -126,6 +130,17 @@ fun Markdown(
                 bullet = bodyTextStyle,
                 list = bodyTextStyle
             ),
+            extendedSpans = markdownExtendedSpans {
+                ExtendedSpans(
+                    RoundedCornerSpanPainter(
+                        cornerRadius = 6.sp,
+                        padding = RoundedCornerSpanPainter.TextPaddingValues(
+                            horizontal = 4.sp,
+                            vertical = 2.sp
+                        ),
+                    )
+                )
+            },
             annotator = markdownAnnotator(
                 config = markdownAnnotatorConfig(eolAsNewLine = true),
                 annotate = { content, child ->
