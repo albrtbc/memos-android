@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.4.0](https://github.com/albrtbc/memos-android/compare/v2.3.0...v2.4.0) (2026-02-24)
+
+
+### Features
+
+* add altitude support to location across API and local storage ([2cc97e4](https://github.com/albrtbc/memos-android/commit/2cc97e4540ae852f8b2afda761b19900fef8f53a))
+* add Paging 3 pagination to main memo list ([7a80cae](https://github.com/albrtbc/memos-android/commit/7a80cae7c1810a9b530d5a712deb15ce2d883b1a))
+* add TikTok and Instagram URL embed cards ([8c38e56](https://github.com/albrtbc/memos-android/commit/8c38e56e8d6a5b531973520d24dc011e809810b3))
+
+
+### Bug Fixes
+
+* improve memo loading UX — auto-refresh on connect, fade-in animations, smaller pages ([0f51daa](https://github.com/albrtbc/memos-android/commit/0f51daa63f40c0465b2dd152f45669a50db050ff))
+* map server zoom field to app zoom instead of using altitude ([f4dd77a](https://github.com/albrtbc/memos-android/commit/f4dd77a297445b93c895c999264b551decb70703))
+* replace LazyColumn with Column to prevent memo recycling ([e49e9af](https://github.com/albrtbc/memos-android/commit/e49e9af58e3f4cc96b7cc7088f6893a9094f167f))
+
 ## [2.3.0](https://github.com/albrtbc/MoeMemosAndroid/compare/v2.2.0...v2.3.0) (2026-02-24)
 
 
