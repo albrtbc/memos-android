@@ -10,6 +10,7 @@ import me.mudkip.moememos.data.local.entity.MemoEntity
 import me.mudkip.moememos.data.local.entity.MemoWithResources
 import me.mudkip.moememos.data.local.entity.ResourceEntity
 import me.mudkip.moememos.data.model.Account
+import me.mudkip.moememos.data.model.MemoLocation
 import me.mudkip.moememos.data.model.MemoVisibility
 import me.mudkip.moememos.data.model.User
 import me.mudkip.moememos.util.extractCustomTags
@@ -52,7 +53,8 @@ class LocalDatabaseRepository(
         content: String,
         visibility: MemoVisibility,
         resources: List<ResourceEntity>,
-        tags: List<String>?
+        tags: List<String>?,
+        location: MemoLocation?
     ): ApiResponse<MemoEntity> {
         return try {
             val now = Instant.now()
@@ -67,7 +69,10 @@ class LocalDatabaseRepository(
                 needsSync = false,
                 isDeleted = false,
                 lastModified = now,
-                lastSyncedAt = now
+                lastSyncedAt = now,
+                locationPlaceholder = location?.placeholder,
+                locationLatitude = location?.latitude,
+                locationLongitude = location?.longitude
             )
             memoDao.insertMemo(memo)
 
@@ -92,7 +97,8 @@ class LocalDatabaseRepository(
         resources: List<ResourceEntity>?,
         visibility: MemoVisibility?,
         tags: List<String>?,
-        pinned: Boolean?
+        pinned: Boolean?,
+        location: MemoLocation?
     ): ApiResponse<MemoEntity> {
         return try {
             val existingMemo = memoDao.getMemoById(identifier, accountKey)
@@ -106,7 +112,10 @@ class LocalDatabaseRepository(
                 lastModified = updatedAt,
                 lastSyncedAt = updatedAt,
                 needsSync = false,
-                isDeleted = false
+                isDeleted = false,
+                locationPlaceholder = if (location != null) { if (location.isEmpty) null else location.placeholder } else existingMemo.locationPlaceholder,
+                locationLatitude = if (location != null) { if (location.isEmpty) null else location.latitude } else existingMemo.locationLatitude,
+                locationLongitude = if (location != null) { if (location.isEmpty) null else location.longitude } else existingMemo.locationLongitude
             )
             memoDao.insertMemo(updatedMemo)
 

@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import me.mudkip.moememos.data.model.MemoLocation
 import me.mudkip.moememos.data.model.MemoRepresentable
 import me.mudkip.moememos.data.model.MemoVisibility
 import java.time.Instant
@@ -28,8 +29,23 @@ data class MemoEntity(
     val needsSync: Boolean = true,
     val isDeleted: Boolean = false,
     val lastModified: Instant = Instant.now(),
-    val lastSyncedAt: Instant? = null
+    val lastSyncedAt: Instant? = null,
+    val locationPlaceholder: String? = null,
+    val locationLatitude: Double? = null,
+    val locationLongitude: Double? = null
 ) : MemoRepresentable {
     @Ignore
     override var resources: List<ResourceEntity> = emptyList()
+
+    @get:Ignore
+    override val location: MemoLocation?
+        get() = if (locationPlaceholder != null || locationLatitude != null || locationLongitude != null) {
+            MemoLocation(
+                placeholder = locationPlaceholder ?: "",
+                latitude = locationLatitude ?: 0.0,
+                longitude = locationLongitude ?: 0.0
+            )
+        } else {
+            null
+        }
 }

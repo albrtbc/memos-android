@@ -112,4 +112,9 @@
     <string name="error_unknown">Unknown error</string>
     <string name="no_memos">No memos found</string>
     <string name="memo_not_found">Memo not found</string>
+    <string name="location">Location</string>
+    <string name="add_location">Add Location</string>
+    <string name="remove_location">Remove Location</string>
+    <string name="fetching_location">Fetching location…</string>
+    <string name="location_permission_denied">Location permission denied</string>
 </resources>

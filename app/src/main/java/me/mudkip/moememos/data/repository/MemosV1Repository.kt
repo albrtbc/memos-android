@@ -7,9 +7,15 @@ import com.skydoves.sandwich.onSuccess
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import me.mudkip.moememos.data.api.CreateResourceRequest
 import me.mudkip.moememos.data.api.MemosV1Api
 import me.mudkip.moememos.data.api.MemosV1CreateMemoRequest
+import me.mudkip.moememos.data.api.MemosV1Location
 import me.mudkip.moememos.data.api.MemosV1Memo
 import me.mudkip.moememos.data.api.MemosV1Resource
 import me.mudkip.moememos.data.api.MemosV1State
@@ -18,10 +24,13 @@ import me.mudkip.moememos.data.api.UpdateMemoRequest
 import me.mudkip.moememos.data.constant.MoeMemosException
 import me.mudkip.moememos.data.model.Account
 import me.mudkip.moememos.data.model.Memo
+import me.mudkip.moememos.data.model.MemoLocation
 import me.mudkip.moememos.data.model.MemoVisibility
 import me.mudkip.moememos.data.model.Resource
 import me.mudkip.moememos.data.model.User
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import okio.ByteString.Companion.toByteString
 import java.time.Instant
 
@@ -51,7 +60,10 @@ class MemosV1Repository(
             resources = memo.attachments?.map { convertResource(it) } ?: emptyList(),
             tags = emptyList(),
             archived = memo.state == MemosV1State.ARCHIVED,
-            updatedAt = memo.updateTime
+            updatedAt = memo.updateTime,
+            location = memo.location?.let {
+                MemoLocation(it.placeholder, it.latitude, it.longitude)
+            }
         )
     }
 
@@ -125,14 +137,19 @@ class MemosV1Repository(
         visibility: MemoVisibility,
         resourceRemoteIds: List<String>,
         tags: List<String>?,
-        createdAt: Instant?
+        createdAt: Instant?,
+        location: MemoLocation?
     ): ApiResponse<Memo> {
+        val apiLocation = location?.takeIf { !it.isEmpty }?.let {
+            MemosV1Location(it.placeholder, it.latitude, it.longitude)
+        }
         val resp = memosApi.createMemo(
             MemosV1CreateMemoRequest(
                 content = content,
                 visibility = MemosVisibility.fromMemoVisibility(visibility),
                 attachments = resourceRemoteIds.map { MemosV1Resource(name = getName(it)) },
-                createTime = createdAt
+                createTime = createdAt,
+                location = apiLocation
             )
         )
             .mapSuccess { convertMemo(this) }
@@ -146,15 +163,45 @@ class MemosV1Repository(
         visibility: MemoVisibility?,
         tags: List<String>?,
         pinned: Boolean?,
-        archived: Boolean?
+        archived: Boolean?,
+        location: MemoLocation?,
+        clearLocation: Boolean
     ): ApiResponse<Memo> {
+        if (clearLocation) {
+            val jsonObject = buildJsonObject {
+                content?.let { put("content", it) }
+                visibility?.let { put("visibility", MemosVisibility.fromMemoVisibility(it).name) }
+                pinned?.let { put("pinned", it) }
+                archived?.let { isArchived ->
+                    put("state", if (isArchived) "ARCHIVED" else "NORMAL")
+                }
+                put("updateTime", Instant.now().toString())
+                resourceRemoteIds?.let { ids ->
+                    put("attachments", kotlinx.serialization.json.buildJsonArray {
+                        ids.forEach { id ->
+                            add(buildJsonObject { put("name", getName(id)) })
+                        }
+                    })
+                }
+                put("location", JsonNull)
+            }
+            val body = jsonObject.toString()
+                .toRequestBody("application/json".toMediaType())
+            return memosApi.updateMemoRaw(getId(remoteId), body)
+                .mapSuccess { convertMemo(this) }
+        }
+
+        val apiLocation = location?.takeIf { !it.isEmpty }?.let {
+            MemosV1Location(it.placeholder, it.latitude, it.longitude)
+        }
         val resp = memosApi.updateMemo(getId(remoteId), UpdateMemoRequest(
             content = content,
             visibility = visibility?.let { MemosVisibility.fromMemoVisibility(it) },
             pinned = pinned,
             state = archived?.let { isArchived -> if (isArchived) MemosV1State.ARCHIVED else MemosV1State.NORMAL },
             updateTime = Instant.now(),
-            attachments = resourceRemoteIds?.map { MemosV1Resource(name = getName(it)) }
+            attachments = resourceRemoteIds?.map { MemosV1Resource(name = getName(it)) },
+            location = apiLocation
         )).mapSuccess { convertMemo(this) }
         return resp
     }

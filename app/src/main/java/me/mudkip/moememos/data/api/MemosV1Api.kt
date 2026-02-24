@@ -5,6 +5,7 @@ import androidx.core.net.toUri
 import com.skydoves.sandwich.ApiResponse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import okhttp3.RequestBody
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -34,6 +35,9 @@ interface MemosV1Api {
 
     @PATCH("api/v1/memos/{id}")
     suspend fun updateMemo(@Path("id") memoId: String, @Body body: UpdateMemoRequest): ApiResponse<MemosV1Memo>
+
+    @PATCH("api/v1/memos/{id}")
+    suspend fun updateMemoRaw(@Path("id") memoId: String, @Body body: RequestBody): ApiResponse<MemosV1Memo>
 
     @DELETE("api/v1/memos/{id}")
     suspend fun deleteMemo(@Path("id") memoId: String): ApiResponse<Unit>
@@ -79,12 +83,20 @@ data class GetCurrentUserResponse(
 )
 
 @Serializable
+data class MemosV1Location(
+    val placeholder: String = "",
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0
+)
+
+@Serializable
 data class MemosV1CreateMemoRequest(
     val content: String,
     val visibility: MemosVisibility?,
     val attachments: List<MemosV1Resource>?,
     @Serializable(with = Rfc3339InstantSerializer::class)
-    val createTime: Instant? = null
+    val createTime: Instant? = null,
+    val location: MemosV1Location? = null
 )
 
 @Serializable
@@ -101,7 +113,8 @@ data class UpdateMemoRequest(
     val pinned: Boolean? = null,
     @Serializable(with = Rfc3339InstantSerializer::class)
     val updateTime: Instant? = null,
-    val attachments: List<MemosV1Resource>? = null
+    val attachments: List<MemosV1Resource>? = null,
+    val location: MemosV1Location? = null
 )
 
 @Serializable
@@ -132,7 +145,8 @@ data class MemosV1Memo(
     val visibility: MemosVisibility? = null,
     val pinned: Boolean? = null,
     val attachments: List<MemosV1Resource>? = null,
-    val tags: List<String>? = null
+    val tags: List<String>? = null,
+    val location: MemosV1Location? = null
 )
 
 @Serializable

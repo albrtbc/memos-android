@@ -27,6 +27,7 @@ import me.mudkip.moememos.data.local.entity.ResourceEntity
 import me.mudkip.moememos.data.constant.MoeMemosException
 import me.mudkip.moememos.data.model.Account
 import me.mudkip.moememos.data.model.Memo
+import me.mudkip.moememos.data.model.MemoLocation
 import me.mudkip.moememos.data.model.MemoVisibility
 import me.mudkip.moememos.data.model.Resource
 import me.mudkip.moememos.data.model.SyncStatus
@@ -95,10 +96,12 @@ class SyncingRepository(
         content: String,
         visibility: MemoVisibility,
         resources: List<ResourceEntity>,
-        tags: List<String>?
+        tags: List<String>?,
+        location: MemoLocation?
     ): ApiResponse<MemoEntity> {
         return try {
             val now = Instant.now()
+            val loc = location?.takeIf { !it.isEmpty }
             val localMemo = MemoEntity(
                 identifier = UUID.randomUUID().toString(),
                 remoteId = null,
@@ -111,7 +114,10 @@ class SyncingRepository(
                 needsSync = true,
                 isDeleted = false,
                 lastModified = now,
-                lastSyncedAt = null
+                lastSyncedAt = null,
+                locationPlaceholder = loc?.placeholder,
+                locationLatitude = loc?.latitude,
+                locationLongitude = loc?.longitude
             )
             memoDao.insertMemo(localMemo)
 
@@ -138,7 +144,8 @@ class SyncingRepository(
         resources: List<ResourceEntity>?,
         visibility: MemoVisibility?,
         tags: List<String>?,
-        pinned: Boolean?
+        pinned: Boolean?,
+        location: MemoLocation?
     ): ApiResponse<MemoEntity> {
         return try {
             val existingMemo = memoDao.getMemoById(identifier, accountKey)
@@ -150,7 +157,10 @@ class SyncingRepository(
                 pinned = pinned ?: existingMemo.pinned,
                 needsSync = true,
                 isDeleted = false,
-                lastModified = Instant.now()
+                lastModified = Instant.now(),
+                locationPlaceholder = if (location != null) { if (location.isEmpty) null else location.placeholder } else existingMemo.locationPlaceholder,
+                locationLatitude = if (location != null) { if (location.isEmpty) null else location.latitude } else existingMemo.locationLatitude,
+                locationLongitude = if (location != null) { if (location.isEmpty) null else location.longitude } else existingMemo.locationLongitude
             )
             memoDao.insertMemo(updatedMemo)
 
@@ -590,6 +600,8 @@ class SyncingRepository(
         }
         val remoteResourceIds = uploadedResources.remoteResourceIds
 
+        val localLocation = local.location
+
         return if (!forceCreate && local.remoteId != null) {
             val updated = remoteRepository.updateMemo(
                 remoteId = local.remoteId,
@@ -597,7 +609,8 @@ class SyncingRepository(
                 resourceRemoteIds = remoteResourceIds,
                 visibility = local.visibility,
                 pinned = local.pinned,
-                archived = local.archived
+                archived = local.archived,
+                location = localLocation
             )
             if (updated is ApiResponse.Success) {
                 reconcileServerCreatedMemo(
@@ -614,7 +627,8 @@ class SyncingRepository(
                 visibility = local.visibility,
                 resourceRemoteIds = remoteResourceIds,
                 tags = null,
-                createdAt = local.date
+                createdAt = local.date,
+                location = localLocation
             )
             if (created !is ApiResponse.Success) {
                 return false
@@ -724,6 +738,7 @@ class SyncingRepository(
         val localIdentifier = current?.identifier ?: UUID.randomUUID().toString()
         val remoteUpdatedAt = remoteMemo.updatedAt ?: remoteMemo.date
 
+        val remoteLocation = remoteMemo.location
         memoDao.insertMemo(
             MemoEntity(
                 identifier = localIdentifier,
@@ -737,7 +752,10 @@ class SyncingRepository(
                 needsSync = false,
                 isDeleted = false,
                 lastModified = remoteUpdatedAt,
-                lastSyncedAt = remoteUpdatedAt
+                lastSyncedAt = remoteUpdatedAt,
+                locationPlaceholder = remoteLocation?.placeholder,
+                locationLatitude = remoteLocation?.latitude,
+                locationLongitude = remoteLocation?.longitude
             )
         )
 
@@ -798,6 +816,9 @@ class SyncingRepository(
             return false
         }
         if (local.archived != remote.archived) {
+            return false
+        }
+        if (local.location != remote.location) {
             return false
         }
 

@@ -46,6 +46,7 @@ import me.mudkip.moememos.ext.icon
 import me.mudkip.moememos.ext.popBackStackIfLifecycleIsResumed
 import me.mudkip.moememos.ext.string
 import me.mudkip.moememos.ext.titleResource
+import me.mudkip.moememos.ui.component.LocationMapPreview
 import me.mudkip.moememos.ui.component.MemoContent
 import me.mudkip.moememos.ui.component.MemosCardActionButton
 import me.mudkip.moememos.ui.page.common.LocalRootNavController
@@ -183,6 +184,14 @@ fun MemoDetailPage(
                     }
                 }
             )
+
+            if (memo.location != null) {
+                LocationMapPreview(
+                    location = memo.location!!,
+                    modifier = Modifier.padding(start = 15.dp, end = 15.dp, top = 8.dp, bottom = 15.dp),
+                    mapHeight = 180.dp
+                )
+            }
         }
     }
 }

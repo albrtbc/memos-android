@@ -5,7 +5,10 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.skydoves.sandwich.ApiResponse
@@ -18,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.mudkip.moememos.data.local.entity.MemoEntity
 import me.mudkip.moememos.data.local.entity.ResourceEntity
+import me.mudkip.moememos.data.model.MemoLocation
 import me.mudkip.moememos.data.model.MemoVisibility
 import me.mudkip.moememos.data.service.MemoService
 import me.mudkip.moememos.ext.settingsDataStore
@@ -36,9 +40,10 @@ class MemoInputViewModel @Inject constructor(
         settings.usersList.firstOrNull { it.accountKey == settings.currentUser }?.settings?.draft
     }
     var uploadResources = mutableStateListOf<ResourceEntity>()
+    var currentLocation by mutableStateOf<MemoLocation?>(null)
 
-    suspend fun createMemo(content: String, visibility: MemoVisibility, tags: List<String>): ApiResponse<MemoEntity> = withContext(viewModelScope.coroutineContext) {
-        val response = memoService.getRepository().createMemo(content, visibility, uploadResources, tags)
+    suspend fun createMemo(content: String, visibility: MemoVisibility, tags: List<String>, location: MemoLocation? = null): ApiResponse<MemoEntity> = withContext(viewModelScope.coroutineContext) {
+        val response = memoService.getRepository().createMemo(content, visibility, uploadResources, tags, location)
         // Update widgets when a new memo is created
         response.suspendOnSuccess {
             WidgetUpdater.updateWidgets(getApplication())
@@ -46,8 +51,8 @@ class MemoInputViewModel @Inject constructor(
         response
     }
 
-    suspend fun editMemo(identifier: String, content: String, visibility: MemoVisibility, tags: List<String>): ApiResponse<MemoEntity> = withContext(viewModelScope.coroutineContext) {
-        val response = memoService.getRepository().updateMemo(identifier, content, uploadResources, visibility, tags)
+    suspend fun editMemo(identifier: String, content: String, visibility: MemoVisibility, tags: List<String>, location: MemoLocation? = null): ApiResponse<MemoEntity> = withContext(viewModelScope.coroutineContext) {
+        val response = memoService.getRepository().updateMemo(identifier, content, uploadResources, visibility, tags, location = location)
         // Update widgets when a memo is edited
         response.suspendOnSuccess {
             WidgetUpdater.updateWidgets(getApplication())
