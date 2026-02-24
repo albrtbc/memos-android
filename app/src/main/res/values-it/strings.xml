@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MoeMemos</string>
+    <string name="app_name">GS Memos</string>
     <string name="default_card_content" translatable="false">È ciò che fai con il dono della vita che determina chi sei.      — Mewtwo</string>
     <string name="search">Ricerca</string>
     <string name="back">Indietro</string>
