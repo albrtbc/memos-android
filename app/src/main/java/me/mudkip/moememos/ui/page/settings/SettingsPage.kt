@@ -102,7 +102,7 @@ fun SettingsPage(
             accounts.forEach { account ->
                 when (account) {
                     is Account.MemosV0 -> item {
-                        SettingItem(icon = MemosIcon, text = account.info.name, trailingIcon = {
+                        SettingItem(icon = MemosIcon, text = account.info.name.ifEmpty { account.info.host.removePrefix("https://").removePrefix("http://").trimEnd('/') }, trailingIcon = {
                             if (currentAccount?.accountKey() == account.accountKey()) {
                                 Icon(Icons.Outlined.Check,
                                     contentDescription = R.string.selected.string,
@@ -115,7 +115,7 @@ fun SettingsPage(
                         }
                     }
                     is Account.MemosV1 -> item {
-                        SettingItem(icon = MemosIcon, text = account.info.name, trailingIcon = {
+                        SettingItem(icon = MemosIcon, text = account.info.name.ifEmpty { account.info.host.removePrefix("https://").removePrefix("http://").trimEnd('/') }, trailingIcon = {
                             if (currentAccount?.accountKey() == account.accountKey()) {
                                 Icon(Icons.Outlined.Check,
                                     contentDescription = R.string.selected.string,
