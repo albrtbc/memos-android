@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/albrtbc/MoeMemosAndroid/compare/v2.1.0...v2.1.1) (2026-02-24)
+
+
+### Bug Fixes
+
+* support v-prefixed tags and fallback to debug APK without signing secrets ([5bae37e](https://github.com/albrtbc/MoeMemosAndroid/commit/5bae37e2d03e5e67bdafeddb47e0a725e7290500))
+
 ## [2.1.0](https://github.com/albrtbc/MoeMemosAndroid/compare/v2.0.1...v2.1.0) (2026-02-24)
 
 
