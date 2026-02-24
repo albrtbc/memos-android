@@ -13,7 +13,7 @@ import me.mudkip.moememos.data.local.entity.ResourceEntity
 
 @Database(
     entities = [MemoEntity::class, ResourceEntity::class],
-    version = 2
+    version = 3
 )
 @TypeConverters(Converters::class)
 abstract class MoeMemosDatabase : RoomDatabase() {
@@ -31,6 +31,12 @@ abstract class MoeMemosDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE memos ADD COLUMN locationZoom INTEGER DEFAULT NULL")
+            }
+        }
+
         fun getDatabase(context: Context): MoeMemosDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -38,7 +44,7 @@ abstract class MoeMemosDatabase : RoomDatabase() {
                     MoeMemosDatabase::class.java,
                     "moememos_database_localfirst"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                 INSTANCE = instance
                 instance

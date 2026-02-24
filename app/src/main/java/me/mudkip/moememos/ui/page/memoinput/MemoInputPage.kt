@@ -349,7 +349,10 @@ fun MemoInputPage(
             uploadResources = viewModel.uploadResources.toList(),
             inputViewModel = viewModel,
             currentLocation = viewModel.currentLocation,
-            onLocationRemove = { viewModel.currentLocation = null }
+            onLocationRemove = { viewModel.currentLocation = null },
+            onLocationZoomChange = { newZoom ->
+                viewModel.currentLocation = viewModel.currentLocation?.copy(zoom = newZoom)
+            }
         )
     }
 

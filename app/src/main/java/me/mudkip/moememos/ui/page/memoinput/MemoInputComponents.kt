@@ -267,7 +267,8 @@ internal fun MemoInputEditor(
     uploadResources: List<ResourceEntity>,
     inputViewModel: MemoInputViewModel,
     currentLocation: MemoLocation? = null,
-    onLocationRemove: () -> Unit = {}
+    onLocationRemove: () -> Unit = {},
+    onLocationZoomChange: (Int) -> Unit = {}
 ) {
     val imageResources = remember(uploadResources) {
         uploadResources.filter { it.mimeType?.startsWith("image/") == true }
@@ -323,7 +324,8 @@ internal fun MemoInputEditor(
                 modifier = Modifier.padding(start = 15.dp, end = 15.dp, bottom = 8.dp),
                 mapHeight = 120.dp,
                 showRemoveButton = true,
-                onRemove = onLocationRemove
+                onRemove = onLocationRemove,
+                onZoomChange = onLocationZoomChange
             )
         }
 

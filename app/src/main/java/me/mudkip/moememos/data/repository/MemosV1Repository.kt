@@ -62,7 +62,7 @@ class MemosV1Repository(
             archived = memo.state == MemosV1State.ARCHIVED,
             updatedAt = memo.updateTime,
             location = memo.location?.let {
-                MemoLocation(it.placeholder, it.latitude, it.longitude)
+                MemoLocation(it.placeholder, it.latitude, it.longitude, MemoLocation.DEFAULT_ZOOM)
             }
         )
     }
