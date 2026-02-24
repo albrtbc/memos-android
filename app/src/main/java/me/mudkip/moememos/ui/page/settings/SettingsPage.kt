@@ -11,7 +11,6 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.PersonAdd
-import androidx.compose.material.icons.outlined.Source
 import androidx.compose.material.icons.outlined.Web
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -178,25 +177,19 @@ fun SettingsPage(
 
             item {
                 SettingItem(icon = Icons.Outlined.Web, text = R.string.website.string) {
-                    uriHandler.openUri("https://memos.moe")
+                    uriHandler.openUri("https://github.com/albrtbc/memos-android")
                 }
             }
 
             item {
                 SettingItem(icon = Icons.Outlined.Lock, text = R.string.privacy_policy.string) {
-                    uriHandler.openUri("https://memos.moe/privacy")
-                }
-            }
-
-            item {
-                SettingItem(icon = Icons.Outlined.Source, text = R.string.acknowledgements.string) {
-                    uriHandler.openUri("https://memos.moe/android-acknowledgements")
+                    uriHandler.openUri("https://github.com/albrtbc/memos-android/blob/main/PRIVACY.md")
                 }
             }
 
             item {
                 SettingItem(icon = Icons.Outlined.BugReport, text = R.string.report_an_issue.string) {
-                    uriHandler.openUri("https://github.com/mudkipme/MoeMemosAndroid/issues")
+                    uriHandler.openUri("https://github.com/albrtbc/memos-android/issues")
                 }
             }
         }
