@@ -18,6 +18,8 @@ import coil3.ImageLoader
 import coil3.annotation.ExperimentalCoilApi
 import coil3.compose.AsyncImage
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import kotlinx.coroutines.launch
 import me.mudkip.moememos.viewmodel.LocalMemos
 import me.mudkip.moememos.viewmodel.LocalUserState
@@ -53,7 +55,10 @@ fun MemoImage(
     }
 
     AsyncImage(
-        model = url,
+        model = ImageRequest.Builder(context)
+            .data(url)
+            .crossfade(300)
+            .build(),
         imageLoader = imageLoader,
         contentDescription = null,
         modifier = modifier.clickable {

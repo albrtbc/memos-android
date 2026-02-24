@@ -11,7 +11,7 @@ import me.mudkip.moememos.data.model.Memo
 import me.mudkip.moememos.data.repository.RemoteRepository
 import java.util.UUID
 
-const val MEMOS_PAGE_SIZE = 20
+const val MEMOS_PAGE_SIZE = 10
 
 class MemosPagingSource(
     private val remoteRepository: RemoteRepository,

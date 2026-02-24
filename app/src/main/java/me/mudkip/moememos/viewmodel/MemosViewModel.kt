@@ -224,6 +224,7 @@ class MemosViewModel @Inject constructor(
 
             val syncResult = memoService.sync(false)
             if (syncResult is ApiResponse.Success) {
+                triggerPagingRefresh()
                 WidgetUpdater.updateWidgets(appContext)
                 loadTags()
             } else {

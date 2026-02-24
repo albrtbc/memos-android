@@ -1,7 +1,9 @@
 package me.mudkip.moememos.ui.page.memos
 
 import android.net.Uri
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +14,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -27,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
@@ -70,6 +74,7 @@ fun MemosList(
     val scope = rememberCoroutineScope()
     var isRefreshing by remember { mutableStateOf(false) }
     var syncAlert by remember { mutableStateOf<PullRefreshSyncAlert?>(null) }
+    val seenMemoIds = remember { mutableSetOf<String>() }
 
     val pagedMemos = viewModel.pagedMemos.collectAsLazyPagingItems()
 
@@ -126,6 +131,8 @@ fun MemosList(
         ) {
             items(pagedMemos.itemCount) { index ->
                 val memo = pagedMemos[index] ?: return@items
+                val shouldAnimate = memo.identifier !in seenMemoIds
+                if (shouldAnimate) seenMemoIds.add(memo.identifier)
                 MemosCard(
                     memo = memo,
                     onClick = { selectedMemo ->
@@ -136,20 +143,27 @@ fun MemosList(
                     editGesture = editGesture ?: MemoEditGesture.NONE,
                     previewMode = true,
                     showSyncStatus = currentAccount !is Account.Local,
-                    onTagClick = onTagClick
+                    onTagClick = onTagClick,
+                    animated = shouldAnimate
                 )
             }
 
             // Loading indicator for appending more pages
             if (pagedMemos.loadState.append is LoadState.Loading) {
                 item {
-                    Box(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         CircularProgressIndicator()
+                        Text(
+                            text = stringResource(R.string.loading),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
