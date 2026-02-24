@@ -16,9 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,14 +32,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.network.NetworkHeaders
+import coil3.network.httpHeaders
 import me.mudkip.moememos.R
 import me.mudkip.moememos.data.model.MemoLocation
 import kotlin.math.PI
@@ -67,8 +73,8 @@ private fun computeTile(lat: Double, lng: Double, zoom: Int): TileInfo {
 }
 
 private fun tileUrl(zoom: Int, x: Int, y: Int): String {
-    val subdomain = arrayOf("a", "b", "c", "d")[((x + y) % 4 + 4) % 4]
-    return "https://$subdomain.basemaps.cartocdn.com/rastertiles/voyager/$zoom/$x/$y@2x.png"
+    val subdomain = arrayOf("a", "b", "c")[(x + y) % 3]
+    return "https://$subdomain.tile.openstreetmap.org/$zoom/$x/$y.png"
 }
 
 private fun openMapsIntent(location: MemoLocation): Intent {
@@ -95,9 +101,9 @@ private fun TileMapBox(
     val widthPx = with(density) { widthDp.toPx() }
     val heightPx = with(density) { heightDp.toPx() }
     val tileSizePx = 256f
-    // How many tiles we need in each direction to fill the box
-    val tilesX = (widthPx / tileSizePx).toInt() + 2
-    val tilesY = (heightPx / tileSizePx).toInt() + 2
+    // Extra buffer to ensure full coverage on all densities
+    val halfX = (widthPx / tileSizePx / 2f).toInt() + 2
+    val halfY = (heightPx / tileSizePx / 2f).toInt() + 2
     // Offset to center the point in the box
     val panX = widthPx / 2f - tile.offsetXPx
     val panY = heightPx / 2f - tile.offsetYPx
@@ -110,19 +116,29 @@ private fun TileMapBox(
             .background(Color(0xFFE8E8E8))
     ) {
         // Render grid of tiles
-        for (dy in -(tilesY / 2)..(tilesY / 2)) {
-            for (dx in -(tilesX / 2)..(tilesX / 2)) {
+        for (dy in -halfY..halfY) {
+            for (dx in -halfX..halfX) {
                 val tx = tile.tileX + dx
                 val ty = tile.tileY + dy
                 val offsetX = panX + dx * tileSizePx
                 val offsetY = panY + dy * tileSizePx
 
                 AsyncImage(
-                    model = tileUrl(tile.zoom, tx, ty),
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(tileUrl(tile.zoom, tx, ty))
+                        .httpHeaders(
+                            NetworkHeaders.Builder()
+                                .set("User-Agent", "MoeMemos/2.0 Android (https://moememos.mudkip.me)")
+                                .build()
+                        )
+                        .build(),
                     contentDescription = null,
                     modifier = Modifier
                         .size(tileSizeDp)
-                        .offset { IntOffset(offsetX.toInt(), offsetY.toInt()) },
+                        .graphicsLayer {
+                            translationX = offsetX
+                            translationY = offsetY
+                        },
                     contentScale = ContentScale.FillBounds
                 )
             }
@@ -147,7 +163,8 @@ fun LocationMapPreview(
     modifier: Modifier = Modifier,
     mapHeight: Dp = 140.dp,
     showRemoveButton: Boolean = false,
-    onRemove: () -> Unit = {}
+    onRemove: () -> Unit = {},
+    onZoomChange: ((Int) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val label = location.placeholder.ifEmpty {
@@ -172,11 +189,32 @@ fun LocationMapPreview(
         ) {
             TileMapBox(
                 location = location,
-                zoom = 15,
+                zoom = location.zoom,
                 widthDp = 400.dp,
                 heightDp = mapHeight,
                 modifier = Modifier.fillMaxSize()
             )
+
+            if (onZoomChange != null) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(8.dp)
+                ) {
+                    FilledTonalIconButton(
+                        onClick = { if (location.zoom < 18) onZoomChange(location.zoom + 1) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Filled.Add, contentDescription = "Zoom in", modifier = Modifier.size(18.dp))
+                    }
+                    FilledTonalIconButton(
+                        onClick = { if (location.zoom > 3) onZoomChange(location.zoom - 1) },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(Icons.Filled.Remove, contentDescription = "Zoom out", modifier = Modifier.size(18.dp))
+                    }
+                }
+            }
         }
 
         Row(
@@ -242,7 +280,7 @@ fun LocationMapPreviewCompact(
     ) {
         TileMapBox(
             location = location,
-            zoom = 14,
+            zoom = (location.zoom - 1).coerceIn(3, 18),
             widthDp = 90.dp,
             heightDp = 60.dp,
             modifier = Modifier.clip(RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp))
