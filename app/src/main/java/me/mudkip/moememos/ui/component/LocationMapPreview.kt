@@ -67,7 +67,8 @@ private fun computeTile(lat: Double, lng: Double, zoom: Int): TileInfo {
 }
 
 private fun tileUrl(zoom: Int, x: Int, y: Int): String {
-    return "https://tile.openstreetmap.org/$zoom/$x/$y.png"
+    val subdomain = arrayOf("a", "b", "c", "d")[((x + y) % 4 + 4) % 4]
+    return "https://$subdomain.basemaps.cartocdn.com/rastertiles/voyager/$zoom/$x/$y@2x.png"
 }
 
 private fun openMapsIntent(location: MemoLocation): Intent {
