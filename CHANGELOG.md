@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.2](https://github.com/albrtbc/memos-android/compare/v2.4.1...v2.4.2) (2026-02-25)
+
+
+### Bug Fixes
+
+* bump supported memos version range to 0.34.x ([105a4a4](https://github.com/albrtbc/memos-android/commit/105a4a4c32fc8c4537ce2542c9f4878b2a872073))
+
 ## [2.4.1](https://github.com/albrtbc/memos-android/compare/v2.4.0...v2.4.1) (2026-02-24)
 
 
