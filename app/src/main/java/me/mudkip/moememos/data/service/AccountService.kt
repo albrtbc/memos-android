@@ -413,11 +413,7 @@ class AccountService @Inject constructor(
         }
 
         val serverVersion = fetchVersionForAccount(account)
-            ?: return if (isAutomatic) {
-                SyncCompatibility.Blocked(null)
-            } else {
-                SyncCompatibility.Blocked(R.string.memos_supported_versions.string)
-            }
+            ?: return SyncCompatibility.Allowed // Server unreachable; skip version check and let sync handle the network error
         return when (evaluateVersionPolicy(serverVersion)) {
             VersionPolicy.SUPPORTED -> SyncCompatibility.Allowed
             VersionPolicy.TOO_LOW -> {
