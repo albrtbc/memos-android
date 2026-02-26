@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.3](https://github.com/albrtbc/memos-android/compare/v2.4.2...v2.4.3) (2026-02-26)
+
+
+### Bug Fixes
+
+* always paginate from local Room DB for offline-first support ([d82c3c2](https://github.com/albrtbc/memos-android/commit/d82c3c275368ab0b6445324b0cff6d4aa0e2e4fa))
+
 ## [2.4.2](https://github.com/albrtbc/memos-android/compare/v2.4.1...v2.4.2) (2026-02-25)
 
 
