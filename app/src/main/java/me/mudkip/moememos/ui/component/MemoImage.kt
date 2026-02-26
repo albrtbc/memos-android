@@ -71,9 +71,9 @@ fun MemoImage(
                     null
                 } ?: return@let
 
-                val intent = Intent().apply {
-                    action = Intent.ACTION_VIEW
-                    setDataAndType(fileUri, "image/*")
+                val mimeType = context.contentResolver.getType(fileUri) ?: "image/*"
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(fileUri, mimeType)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 try {
